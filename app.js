@@ -3,9 +3,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
-const md5 = require("md5");
-//const encrypt = require("mongoose-encryption"); // Package for encryption purpose
-
+const encrypt = require("mongoose-encryption"); // Package for encryption purpose
+const autoIncrement = require('mongoose-auto-increment');
 const app = express();
 
 app.use(express.static("public"));
@@ -15,18 +14,24 @@ app.use(bodyParser.urlencoded({
 }));
 
 mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser:true});
-
+autoIncrement.initialize(mongoose.connection);
 // from simple js object to object created from mongoose schema class
 const userSchema = new mongoose.Schema({     
     email:String,
     password:String
 });
 
-// Plugins are a tool for reusing logic in multiple schemas
-// By using encrypted fields, we able to encrypt specific schemas on which it is applied
-// const secret = "Thisisourlittlesecret.";
-// userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
+//
+
+
+////Level - 2
+//Plugins are a tool for reusing logic in multiple schemas
+//By using encrypted fields, we able to encrypt specific schemas on which it is applied
+const secret = "Thisisourlittlesecret.";
+userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
+
+userSchema.plugin(autoIncrement.plugin, "User");
 const User = new mongoose.model("User", userSchema); 
 
 app.get("/", function(req, res){
@@ -44,7 +49,7 @@ app.get("/register", function(req, res){
 app.post("/register", function(req, res){
     const newUser =  new User({
         email: req.body.username,
-        password: md5(req.body.password)
+        password: req.body.password
 
     });
     newUser.save(function(err){
